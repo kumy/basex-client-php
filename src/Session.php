@@ -13,13 +13,13 @@ namespace Caxy\BaseX;
 class Session
 {
     // instance variables.
-    protected $socket;
-    protected $info;
-    protected $buffer;
-    protected $bpos;
-    protected $bsize;
+    protected \Socket|false $socket;
+    protected ?string $info = null;
+    protected string $buffer = '';
+    protected int $bpos = 0;
+    protected int $bsize = 0;
 
-    public function __construct($hostname, $port, $user, $password)
+    public function __construct(string $hostname, int $port, string $user, string $password)
     {
         // create server connection
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -54,7 +54,7 @@ class Session
      * @param string $command
      * @return string
      */
-    public function execute($command)
+    public function execute(string $command): string
     {
         // send command to server
         socket_write($this->socket, $command.chr(0));
@@ -63,7 +63,7 @@ class Session
         $result = $this->receive();
         $this->info = $this->readString();
         if ($this->ok() != true) {
-            throw new BaseXException($this->info);
+            throw new BaseXException($this->info ?? 'Unknown error');
         }
         return $result;
     }
@@ -74,7 +74,7 @@ class Session
      * @param string $xquery
      * @return Query
      */
-    public function query($xquery)
+    public function query(string $xquery): Query
     {
         return new Query($this, $xquery);
     }
@@ -85,7 +85,7 @@ class Session
      * @param string $name name of the new database
      * @param string $input XML to insert
      */
-    public function create($name, $input)
+    public function create(string $name, string $input): void
     {
         $this->sendCmd(8, $name, $input);
     }
@@ -96,7 +96,7 @@ class Session
      * @param string $path filesystem-like path
      * @param string $input XML to insert
      */
-    public function add($path, $input)
+    public function add(string $path, string $input): void
     {
         $this->sendCmd(9, $path, $input);
     }
@@ -107,12 +107,12 @@ class Session
      * @param string $path filesystem-like path
      * @param string $input XML to insert
      */
-    public function replace($path, $input)
+    public function replace(string $path, string $input): void
     {
         $this->sendCmd(12, $path, $input);
     }
 
-    public function store($path, $input)
+    public function store(string $path, string $input): void
     {
         $this->sendCmd(13, $path, $input);
     }
@@ -122,7 +122,7 @@ class Session
      *
      * @return string|null
      */
-    public function info()
+    public function info(): ?string
     {
         return $this->info;
     }
@@ -130,13 +130,13 @@ class Session
     /**
      * Close the connection.
      */
-    public function close()
+    public function close(): void
     {
         socket_write($this->socket, "exit".chr(0));
         socket_close($this->socket);
     }
 
-    private function init()
+    private function init(): void
     {
         $this->bpos = 0;
         $this->bsize = 0;
@@ -146,7 +146,7 @@ class Session
      * @internal
      * @return string
      */
-    public function readString()
+    public function readString(): string
     {
         $com = "";
         while (($d = $this->read()) != chr(0)) {
@@ -155,7 +155,7 @@ class Session
         return $com;
     }
 
-    private function read()
+    private function read(): string
     {
         if ($this->bpos == $this->bsize) {
             $this->bsize = socket_recv($this->socket, $this->buffer, 4096, 0);
@@ -164,16 +164,16 @@ class Session
         return $this->buffer[$this->bpos++];
     }
 
-    private function sendCmd($code, $arg, $input)
+    private function sendCmd(int $code, string $arg, string $input): void
     {
         socket_write($this->socket, chr($code).$arg.chr(0).$input.chr(0));
         $this->info = $this->receive();
         if ($this->ok() != true) {
-            throw new BaseXException($this->info);
+            throw new BaseXException($this->info ?? 'Unknown error');
         }
     }
 
-    public function send($str)
+    public function send(string $str): void
     {
         socket_write($this->socket, $str.chr(0));
     }
@@ -184,7 +184,7 @@ class Session
      * @internal not idempotent, not intended for use by client code
      * @return bool
      */
-    public function ok()
+    public function ok(): bool
     {
         return $this->read() == chr(0);
     }
@@ -193,7 +193,7 @@ class Session
      * @internal
      * @return string
      */
-    public function receive()
+    public function receive(): string
     {
         $this->init();
         return $this->readString();

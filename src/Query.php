@@ -12,10 +12,10 @@ namespace Caxy\BaseX;
 
 class Query implements \Iterator
 {
-    protected $session;
-    protected $id;
-    protected $cache;
-    protected $pos;
+    protected Session $session;
+    protected string $id;
+    protected ?array $cache = null;
+    protected int $pos = 0;
 
     /**
      * Query constructor.
@@ -23,28 +23,28 @@ class Query implements \Iterator
      * @param Session $session
      * @param string $query
      */
-    public function __construct($session, $query)
+    public function __construct(Session $session, string $query)
     {
         $this->session = $session;
         $this->id = $this->exec(chr(0), $query);
     }
 
-    public function bind($name, $value, $type = "")
+    public function bind(string $name, string $value, string $type = ""): void
     {
         $this->exec(chr(3), $this->id.chr(0).$name.chr(0).$value.chr(0).$type);
     }
 
-    public function context($value, $type = "")
+    public function context(string $value, string $type = ""): void
     {
         $this->exec(chr(14), $this->id.chr(0).$value.chr(0).$type);
     }
 
-    public function execute()
+    public function execute(): string
     {
         return $this->exec(chr(5), $this->id);
     }
 
-    public function more()
+    public function more(): bool
     {
         if ($this->cache === null) {
             $this->pos = 0;
@@ -70,22 +70,22 @@ class Query implements \Iterator
         }
     }
 
-    public function info()
+    public function info(): string
     {
         return $this->exec(chr(6), $this->id);
     }
 
-    public function options()
+    public function options(): string
     {
         return $this->exec(chr(7), $this->id);
     }
 
-    public function close()
+    public function close(): void
     {
         $this->exec(chr(2), $this->id);
     }
 
-    public function exec($cmd, $arg)
+    public function exec(string $cmd, string $arg): string
     {
         $this->session->send($cmd.$arg);
         $s = $this->session->receive();
