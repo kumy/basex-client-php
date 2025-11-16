@@ -159,6 +159,9 @@ class Session
     {
         if ($this->bpos == $this->bsize) {
             $this->bsize = socket_recv($this->socket, $this->buffer, 4096, 0);
+            if ($this->bsize === false) {
+                throw new BaseXException("Socket read error: " . socket_last_error($this->socket));
+            }
             $this->bpos = 0;
         }
         return $this->buffer[$this->bpos++];
