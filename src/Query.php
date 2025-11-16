@@ -63,10 +63,10 @@ class Query implements \Iterator
         return false;
     }
 
-    public function next()
+    public function next(): void
     {
         if ($this->more()) {
-            return $this->cache[$this->pos++];
+            $this->pos++;
         }
     }
 
@@ -95,22 +95,22 @@ class Query implements \Iterator
         return $s;
     }
 
-    public function current()
+    public function current(): mixed
     {
         return $this->cache[$this->pos];
     }
 
-    public function key()
+    public function key(): mixed
     {
         return $this->pos;
     }
 
-    public function valid()
+    public function valid(): bool
     {
         return $this->more();
     }
 
-    public function rewind()
+    public function rewind(): void
     {
     }
 }
